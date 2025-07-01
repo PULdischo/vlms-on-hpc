@@ -17,6 +17,9 @@ pipe = pipeline(
 
 images = Path('img').glob('*.jpg')
 for img_path in images:
+    if img_path.with_suffix(".md").exists():
+        continue
+
     img = Image.open(img_path).convert("RGB")
 
     messages = [
