@@ -1,7 +1,5 @@
 from PIL import Image
-import os
 import torch
-import json
 from transformers import AutoProcessor, AutoModelForImageTextToText, pipeline, Qwen2VLForConditionalGeneration
 from pathlib import Path 
 
