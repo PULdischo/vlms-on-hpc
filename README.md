@@ -1,13 +1,13 @@
 # VLMs on HPC
 
-This is a set of scripts that can be used to run text recognition (OCR) on Princeton's high performance computing clusters.  
+This is a set of scripts that can be used to run text recognition (OCR/HTR) on Princeton's high-performance computing clusters.  
 
 The main goal is to
 - Download images from a IIIF endpoint
-- Download an opensource model from HuggingFace Hub
+- Download an open-source model from HuggingFace Hub
 - Recognize text in the images and save them as markdown
 
-For Princeton faculty, staff and students, you can request an account on Adroit [here](https://forms.rc.princeton.edu/registration/).
+For Princeton faculty, staff, and students, you can request an account on Adroit [here](https://forms.rc.princeton.edu/registration/).
 
 Regularly updated documentation on Adroit can be found [here](https://researchcomputing.princeton.edu/systems/adroit) 
 
@@ -23,7 +23,7 @@ Alternatively, go to Adroit Cluster Shell Access from [myadroit.princeton.edu](h
 
 Once logged in, you'll be in your home directory on the login node. For me, it's `/home/aj7878` You have very limited space on the login node (server).
 
-You will want to navigate to your folder in the shared netword drive. For example, 
+You will want to navigate to your folder in the shared network drive. For example, 
 ```bash
 cd /scratch/network/<username>
 ```
@@ -129,6 +129,20 @@ For example:
   GPU utilization  [|||||||||                                      18%]
   GPU memory usage [|||||                                          10%]
 ```
+
+To move you images and text off the Adroit servers, you can do the following 
+
+Log in to Huggingface with your token
+```bash 
+hugginface-cli login
+```
+Then enter your token 
+Now you can push all your files to HuggingFace Hub with 
+```bash
+python fetch.py to-hub <your HF username>/<new repo name> 
+```
+By default, your dataset is private. You can publish as public by adding `--public`
+
 Further reading: 
 - https://researchcomputing.princeton.edu/support/knowledge-base/hugging-face
 

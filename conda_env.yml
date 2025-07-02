@@ -41,6 +41,7 @@ dependencies:
       - certifi==2025.6.15
       - charset-normalizer==3.4.2
       - click==8.2.1
+      - datasets=3.6.0
       - filelock==3.18.0
       - frozenlist==1.7.0
       - fsspec==2025.5.1
@@ -81,6 +82,7 @@ dependencies:
       - rich==14.0.0
       - safetensors==0.5.3
       - shellingham==1.5.4
+      - srsly==2.5.1
       - sympy==1.14.0
       - tokenizers==0.21.2
       - torch==2.7.1

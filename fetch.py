@@ -27,7 +27,12 @@ def images(
     manifest.download()
 
 @app.command()
-def to_hub(repo_id: str):
+def to_hub(
+    repo_id: str,
+    public: bool = typer.Option(
+        False, "--public", help="Make the dataset public (default: private)"
+    ),
+):
     """
     Uploads the results to Hugging Face Hub.
     """
@@ -44,7 +49,7 @@ def to_hub(repo_id: str):
             img["text"] = md_path.read_text()
         data.append(img)
     dataset = Dataset.from_list(data)
-    dataset.push_to_hub(repo_id, private=True)
+    dataset.push_to_hub(repo_id, private=not public)
         
 
 if __name__ == "__main__":
