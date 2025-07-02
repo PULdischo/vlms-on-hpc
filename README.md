@@ -53,7 +53,7 @@ The HPC node does not have access to the Internet, so you need to download all m
 
 To do this: 
 ```bash
-python fetch.py model
+python fetch.py model <huggingface/repo-name>
 ```
 then 
 ```bash
