@@ -12,33 +12,53 @@ For Princeton faculty, staff and students, you can request an account on Adroit 
 Regularly updated documentation on Adroit can be found [here](https://researchcomputing.princeton.edu/systems/adroit) 
 
 To connect to the Adroit cluster 
-`ssh <username>@adroit.princeton.edu` the password is the same one you'd use for other CAS logins. You'll need to accept a Duo Push or other authentication.  If you're off campus, keep in mind that you must connect through the campus VPN.  
+
+```bash
+ssh <username>@adroit.princeton.edu
+``` 
+
+the password is the same one you'd use for other CAS logins. You'll need to accept a Duo Push or other authentication.  If you're off campus, keep in mind that you must connect through the campus VPN.  
 
 Alternatively, go to Adroit Cluster Shell Access from [myadroit.princeton.edu](https://myadroit.princeton.edu)
 
 Once logged in, you'll be in your home directory on the login node. For me, it's `/home/aj7878` You have very limited space on the login node (server).
 
-You will want to navigate to your folder in the shared netword drive. For example, `cd /scratch/network/<username>`
+You will want to navigate to your folder in the shared netword drive. For example, 
+```bash
+cd /scratch/network/<username>
+```
 
 Create a folder for your project and change to it
-`mkdir quiche && cd quiche`
+```bash
+mkdir quiche && cd quiche
+```
 
 Once in your directory, you can clone this repository into your folder
-`git clone https://github.com/PULdischo/vlms-on-hpc.git .`
+```
+git clone https://github.com/PULdischo/vlms-on-hpc.git .
+```
 
 now activate conda to manage Python dependencies
-`module load anaconda3/2024.6` 
+```bash 
+module load anaconda3/2024.6
+``` 
 > note that a newer version may be available 
 
 create a virtual enviornment 
-`conda env create -f conda_env.yml`
+```bash
+conda env create -f conda_env.yml
+```
 
 The HPC node does not have access to the Internet, so you need to download all model and image files in advance on the login node. 
 
 To do this: 
-`python fetch.py model`
+```bash
+python fetch.py model
+```
 then 
-`python fetch.py images <IIIF manifest URL>`
+```bash
+python fetch.py images <IIIF manifest URL>
+```
 
 All images will be saved in the img folder.  This is the same folder that will hold the markdown files. For example `0001.jpg` will have a `0001.md` file in the same folder. 
 
@@ -72,7 +92,9 @@ python main.py
 ```
 
 When you have the model downloaded, the images ready and everything is set to go
-`sbatch job.slurm`
+```bash
+sbatch job.slurm
+```
 
 You can view the status of your running jobs here: https://myadroit.princeton.edu/pun/sys/dashboard/activejobs
 
