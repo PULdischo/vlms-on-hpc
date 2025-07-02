@@ -32,6 +32,9 @@ then
 
 All images will be saved in the img folder.  This is the same folder that will hold the markdown files. For example `0001.jpg` will have a `0001.md` file in the same folder. 
 
+When you have the model downloaded, the images ready and everything is set to go
+`sbatch job.slurm`
+
 Further reading: 
 - https://researchcomputing.princeton.edu/support/knowledge-base/hugging-face
 
