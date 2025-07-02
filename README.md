@@ -14,8 +14,11 @@ alternatively, go to Adroit Cluster Shell Access from [myadroit.princeton.edu](h
 
 You will want to navigate to your folder in the shared netword drive. For example, `cd /scratch/network/<username>`
 
-Once in your directory, you can clone this repository
-`git clone https://github.com/PULdischo/vlms-on-hpc.git`
+Create a folder for your project and change to it
+`mkdir quiche && cd quiche`
+
+Once in your directory, you can clone this repository into your folder
+`git clone https://github.com/PULdischo/vlms-on-hpc.git .`
 
 now activate conda to manage Python dependencies
 `module load anaconda3/2024.6` note that a newer version may be available 
