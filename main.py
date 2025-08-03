@@ -15,7 +15,7 @@ pipe = pipeline(
     processor=processor,
 )
 
-images = Path('img').glob('*.jpg')
+images = Path('img').glob('*.png')
 for img_path in images:
     if img_path.with_suffix(".md").exists():
         continue
