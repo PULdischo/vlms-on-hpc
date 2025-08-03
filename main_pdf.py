@@ -11,7 +11,7 @@ import base64
 
 pdf_path = "pdfs"
 md_path = "markdown"
-model: str = "nanonets/Nanonets-OCR-s"
+model: str = "/scratch/network/aj7878/.cache/huggingface/hub/models--nanonets--Nanonets-OCR-s/snapshots/3baad182cc87c65a1861f0c30357d3467e978172"
 batch_size = 32
 max_tokens: int = 4096
 max_model_len: int = 8192
@@ -67,7 +67,7 @@ for pdf in pdfs:
         try:
             doc = pymupdf.open(pdf)
             for i, page in tqdm(enumerate(doc)):  # iterate through the pages
-                pix = page.get_pixmap(dpi=300)  
+                pix = page.get_pixmap(dpi=200)  
                 img = pix.pil_image()
                 if not images.get(pdf.stem):
                     images[pdf.stem] = []
@@ -83,6 +83,9 @@ for pdf in pdfs:
 
 
 for pdf_name, image_list in images.items():
+    md_file = Path(md_path) / f"{pdf_name}.md"
+    if md_file.exists():
+        continue
     print(f"Processing {pdf_name} with {len(image_list)} pages")
     image_list.sort(key=lambda x: x["page"])
     image_batches = [
@@ -100,5 +103,4 @@ for pdf_name, image_list in images.items():
         for output in outputs:
             markdown_text = output.outputs[0].text.strip()
             pdf_text += markdown_text + "\n\n"     
-    md_file = Path(md_path) / f"{pdf_name}.md"
     md_file.write_text(pdf_text, encoding='utf-8')
