@@ -32,7 +32,7 @@ sampling_params = SamplingParams(
 
 def make_ocr_message(
     image: Union[Image.Image, Dict[str, Any], str],
-    prompt: str = "Extract the text from the above document as if you were reading it naturally. Return the tables in html format. Return the equations in LaTeX representation. If there is an image in the document and image caption is not present, add a small description of the image inside the <img></img> tag; otherwise, add the image caption inside <img></img>. Watermarks should be wrapped in brackets. Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. Prefer using ☐ and ☑ for check boxes.",
+    prompt: str = "Extract the text from the above document as if you were reading it naturally. Return the tables in markdown format. Return the equations in LaTeX representation. If there is an image in the document and image caption is not present, add a small description of the image inside the <img></img> tag; otherwise, add the image caption inside <img></img>. Watermarks should be wrapped in brackets. Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. Prefer using ☐ and ☑ for check boxes.",
 ) -> List[Dict]:
     """Create chat message for OCR processing."""
     # Convert to PIL Image if needed
@@ -61,46 +61,40 @@ def make_ocr_message(
         }
     ]
 
-images = {}
 pdfs = Path(pdf_path).glob('*')
 for pdf in pdfs:
-        try:
-            doc = pymupdf.open(pdf)
-            for i, page in tqdm(enumerate(doc)):  # iterate through the pages
-                pix = page.get_pixmap(dpi=200)  
-                img = pix.pil_image()
-                if not images.get(pdf.stem):
-                    images[pdf.stem] = []
-                images[pdf.stem].append({
-                    "image": img,
-                    "text": "",
-                    "page": i + 1,
-                    "pdf_name": pdf.stem
-                })
-        except Exception as e:
-            print(f"Error opening {pdf}: {e}")
-            continue
-
-
-for pdf_name, image_list in images.items():
-    md_file = Path(md_path) / f"{pdf_name}.md"
+    md_file = Path(md_path) / f"{pdf.stem}.md"
     if md_file.exists():
         continue
-    print(f"Processing {pdf_name} with {len(image_list)} pages")
-    image_list.sort(key=lambda x: x["page"])
-    image_batches = [
-        image_list[i:i + batch_size] for i in range(0, len(image_list), batch_size)
-    ]
-    
-    pdf_text = """"""
-    for batch in tqdm(image_batches, desc=f"Processing {pdf_name}"):
-        batch_messages = [make_ocr_message(page["image"]) for page in batch]
-        
-        # Process with vLLM
-        outputs = llm.chat(batch_messages, sampling_params)
+    pdf_images = []
+    try:
+        doc = pymupdf.open(pdf)
+        for i, page in tqdm(enumerate(doc)):  # iterate through the pages
+            pix = page.get_pixmap(dpi=200)  
+            img = pix.pil_image()
+            pdf_images.append({
+                "image": img,
+                "page": i + 1,
+            })
 
-        # Extract markdown from outputs
-        for output in outputs:
-            markdown_text = output.outputs[0].text.strip()
-            pdf_text += markdown_text + "\n\n"     
-    md_file.write_text(pdf_text, encoding='utf-8')
+        pdf_images.sort(key=lambda x: x["page"])
+        image_batches = [
+            pdf_images[i:i + batch_size] for i in range(0, len(pdf_images), batch_size)
+        ]
+        
+        pdf_text = """"""
+        for batch in tqdm(image_batches, desc=f"Processing {pdf.stem}"):
+            batch_messages = [make_ocr_message(page["image"]) for page in batch]
+            
+            # Process with vLLM
+            outputs = llm.chat(batch_messages, sampling_params)
+
+            # Extract markdown from outputs
+            for output in outputs:
+                markdown_text = output.outputs[0].text.strip()
+                pdf_text += markdown_text + "\n\n"     
+        md_file.write_text(pdf_text, encoding='utf-8')
+
+    except Exception as e:
+        print(f"Error opening {pdf}: {e}")
+        continue
