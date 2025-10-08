@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=qwen3-vl    # create a short name for your job
+#SBATCH --job-name=qwen3-vl-video    # create a short name for your job
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)
@@ -17,4 +17,4 @@ conda activate vlm
 HF_HUB_OFFLINE=1
 VLLM_HOST_IP=0.0.0.0
 #CUDA_VISIBLE_DEVICES=0
-python main.py
+python main_video.py

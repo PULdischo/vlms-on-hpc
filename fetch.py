@@ -1,9 +1,9 @@
 import typer
 import srsly
 from huggingface_hub import snapshot_download
-from iiif_download import IIIFManifest
 from pathlib import Path
 from datasets import Dataset
+from iiif_download import IIIFManifest
 
 app = typer.Typer()
 

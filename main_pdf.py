@@ -12,7 +12,8 @@ import srsly
 
 pdf_path = "pdfs"
 md_path = "markdown"
-model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--nanonets--Nanonets-OCR-s/snapshots/3baad182cc87c65a1861f0c30357d3467e978172'
+model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--Qwen--Qwen3-VL-30B-A3B-Instruct-FP8/snapshots/888324b140e2cbbc2b780e0cb79ed4e13ed916f5'
+#model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--nanonets--Nanonets-OCR-s/snapshots/3baad182cc87c65a1861f0c30357d3467e978172'
 batch_size = 32
 max_tokens: int = 4096
 max_model_len: int = 8192
