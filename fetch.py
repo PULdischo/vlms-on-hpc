@@ -9,7 +9,7 @@ app = typer.Typer()
 
 
 @app.command()
-def model(repo_id: str = "nanonets/Nanonets-OCR-s"):
+def model(repo_id: str = typer.Argument("nanonets/Nanonets-OCR-s")):
     """
     Downloads a model from Hugging Face Hub.
     """
