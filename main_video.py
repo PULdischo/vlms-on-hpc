@@ -12,7 +12,7 @@ import srsly
 
 img_path = "img"
 md_path = "markdown"
-model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--Qwen--Qwen3-VL-30B-A3B-Instruct-FP8/snapshots/888324b140e2cbbc2b780e0cb79ed4e13ed916f5'
+model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--Qwen--Qwen3-VL-235B-A22B-Instruct-FP8/snapshots/d464a056915e088a7621533813ed553ceea73a6e'
 batch_size = 32
 max_tokens: int = 4096
 max_model_len: int = 8192
@@ -24,6 +24,7 @@ llm = LLM(
     trust_remote_code=True,
     max_model_len=max_model_len,
     gpu_memory_utilization=gpu_memory_utilization,
+    limit_mm_per_prompt={"image": 1, "video": 2000},
 )
 
 sampling_params = SamplingParams(
@@ -40,7 +41,7 @@ messages = [
             "content": [
                 {
                     "type": "video", 
-                    "video": image_paths,
+                    "frame_list": image_paths,
                     "fps": 1.0, 
                 },
                 {"type": "text", "text": prompt},
