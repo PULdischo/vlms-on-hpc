@@ -8,12 +8,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=end          # send email when job ends
 #SBATCH --mail-type=fail         # send email if job fails
-#SBATCH --mail-user=apjanco@princeton.edu
+#SBATCH --mail-user=%u@princeton.edu
 
 module purge
 module load anaconda3/2025.6
 conda activate vlm
-HF_HUB_OFFLINE=1
+export HF_HUB_OFFLINE=1
 export CUDA_VISIBLE_DEVICES=0
 python main_pdf.py
 
