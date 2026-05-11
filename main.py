@@ -1,29 +1,35 @@
 from PIL import Image
-import torch
-from transformers import AutoProcessor, AutoModelForImageTextToText, pipeline, Qwen2VLForConditionalGeneration
 from vllm import LLM, SamplingParams
-from pathlib import Path 
-import pymupdf
+from pathlib import Path
 from tqdm import tqdm
 from typing import Any, Dict, List, Union
 import io
 import base64
 import srsly
+from pillow_heif import register_heif_opener
 
-pdf_path = "pdfs"
-md_path = "markdown"
-model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--nanonets--Nanonets-OCR-s/snapshots/3baad182cc87c65a1861f0c30357d3467e978172'
+# Register the HEIF opener
+register_heif_opener()
+
+
+input_path = "images"
+output_path = "markdown"
+model_repo = "nanonets/Nanonets-OCR-s"
+# Read model path written by `fetch model`
+model_info = srsly.read_json("model_info.json")
+model_path = model_info[model_repo]['model_path']
 batch_size = 32
 max_tokens: int = 4096
 max_model_len: int = 8192
 gpu_memory_utilization: float = 0.9
 
 llm = LLM(
-    model=model,
+    model=model_path,
     trust_remote_code=True,
     max_model_len=max_model_len,
     gpu_memory_utilization=gpu_memory_utilization,
     limit_mm_per_prompt={"image": 1},
+    enable_prefix_caching=True,
 )
 
 sampling_params = SamplingParams(
@@ -33,17 +39,17 @@ sampling_params = SamplingParams(
 
 def make_ocr_message(
     image: Union[Image.Image, Dict[str, Any], str],
-    prompt: str = "Extract the text from the above document as if you were reading it naturally. Return the tables in markdown format. Return the equations in LaTeX representation. If there is an image in the document and image caption is not present, add a small description of the image inside the <img></img> tag; otherwise, add the image caption inside <img></img>. Watermarks should be wrapped in brackets. Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. Prefer using ☐ and ☑ for check boxes.",
+    prompt: str
 ) -> List[Dict]:
     """Create chat message for OCR processing."""
+    
     # Convert to PIL Image if needed
     if isinstance(image, Image.Image):
         pil_img = image
     elif isinstance(image, dict) and "bytes" in image:
         pil_img = Image.open(io.BytesIO(image["bytes"]))
-    elif isinstance(image, str):
+    elif isinstance(image, (str, Path)):
         pil_img = Image.open(image)
-    #TODO add support for PDF and HEIC files
     else:
         raise ValueError(f"Unsupported image type: {type(image)}")
 
@@ -64,55 +70,29 @@ def make_ocr_message(
     ]
 
 
-pdfs = Path(pdf_path).glob('*')
-for pdf in pdfs:
+def md_exists(file_path: Path) -> bool:
+    return (Path(output_path) / f"{file_path.stem}.md").exists()
 
-    md_file = Path(md_path) / f"{pdf.stem}.md"
-    if md_file.exists():
+images_paths = list(Path(input_path).glob('*'))
+
+image_batches = [
+    images_paths[i:i + batch_size] for i in range(0, len(images_paths), batch_size)
+]
+prompt = Path("ocr_prompt.txt").read_text()
+
+Path(output_path).mkdir(parents=True, exist_ok=True)
+
+for batch in tqdm(image_batches, desc="Processing images"):
+    pending = [(page, make_ocr_message(page, prompt)) for page in batch if not md_exists(page)]
+    if not pending:
         continue
+    pages, batch_messages = zip(*pending)
 
-    current_files = srsly.read_json("current_files.json")
-    if pdf.stem in current_files:
-        #print(f"Skipping {pdf.stem} as it is already being processed by another job.")
-        continue
-    else:
-        current_files.append(pdf.stem)
-        srsly.write_json("current_files.json", current_files)
-    
-    pdf_images = []
-    try:
-        doc = pymupdf.open(pdf)
-        for i, page in tqdm(enumerate(doc)):  # iterate through the pages
-            pix = page.get_pixmap(dpi=100)  
-            img = pix.pil_image()
-            pdf_images.append({
-                "image": img,
-                "page": i + 1,
-            })
+    # Process with vLLM
+    outputs = llm.chat(list(batch_messages), sampling_params)
 
-        pdf_images.sort(key=lambda x: x["page"])
-        image_batches = [
-            pdf_images[i:i + batch_size] for i in range(0, len(pdf_images), batch_size)
-        ]
-        
-        pdf_text = """"""
-        for batch in tqdm(image_batches, desc=f"Processing {pdf.stem}"):
-            batch_messages = [make_ocr_message(page["image"]) for page in batch]
-            
-            # Process with vLLM
-            outputs = llm.chat(batch_messages, sampling_params)
-
-            # Extract markdown from outputs
-            for output in outputs:
-                markdown_text = output.outputs[0].text.strip()
-                pdf_text += markdown_text + "\n\n"     
-        md_file.write_text(pdf_text, encoding='utf-8')
-        current_files = srsly.read_json("current_files.json")
-        if pdf.stem in current_files:
-            current_files.remove(pdf.stem)
-            srsly.write_json("current_files.json", current_files)
-
-
-    except Exception as e:
-        print(f"Error opening {pdf}: {e}")
-        continue
+    # Write each output to its corresponding markdown file
+    for page_path, output in zip(pages, outputs):
+        markdown_text = output.outputs[0].text.strip()
+        md_file = Path(output_path) / f"{page_path.stem}.md"
+        md_file.write_text(markdown_text, encoding='utf-8')

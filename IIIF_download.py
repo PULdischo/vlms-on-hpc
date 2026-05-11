@@ -8,11 +8,21 @@ import httpx
 import asyncio
 from IIIFTileSource import IIIFTileSource, zoom_to_scale
 
-def iiif_download(manifest_url: str, sample_size: int = None):
+
+def iiif_download(manifest_url: str, output_dir: str):
+    pass
+# download the first image from the manifest
+# if full and presentation 3, check size of the image against width and height 
+# if server is sending smaller thumnail, call the tile route to get full sized image
+# else keep the downloaded image and proceed 
+#if full and presentation 2, check size against the canvas width and height
+# if server is sending smaller thumnail, call the tile route to get full sized image
+
+def iiif_tiles_download(manifest_url: str, output_dir: str, scale_factor: float = 0.9, sample_size: int = None):
     result = zoom_to_scale(manifest_url, scale_factor)     # Full scale (100%)
-    # no img folder create one
-    if os.path.exists('img') == False:
-        os.mkdir('img')
+    # no output folder create one
+    if os.path.exists(f'{output_dir}') == False:
+        os.mkdir(f'{output_dir}')
 
     images = result.get('images', [])
     if sample_size and sample_size < len(images):
@@ -20,16 +30,14 @@ def iiif_download(manifest_url: str, sample_size: int = None):
     info = {}
     info['url'] = result['manifest_uri']
     info['images'] = {}
-    if manifest:
-        info['metadata'] = manifest.get('metadata', {})
-        info['label'] = manifest.get('label', '')
+    info['metadata'] = result.get('metadata', {})
+    info['label'] = result.get('label', '')
     for image in tqdm(images):
         image_filename = "_".join(image['image_id'].split('/')[4:6])
         if '.jp2' in image_filename:
-        image_filename = image_filename.replace('.jp2', '.jpg')
-        info['images'][image_filename] = image['image_id']
+            image_filename = image_filename.replace('.jp2', '.jpg')
         else:
-        image_filename = image_filename + ".jpg"
+            image_filename = image_filename + ".jpg"
         info['images'][image_filename] = image['image_id']
 
         # Get image info to determine proper grid dimensions
@@ -105,6 +113,6 @@ def iiif_download(manifest_url: str, sample_size: int = None):
 
                     combined_image.paste(tile, (pos_x, pos_y))
                     tile_index += 1
-        combined_image.save(f"/content/img/{image_filename}")
+        combined_image.save(f"{output_dir}/{image_filename}")
 
-    srsly.write_json('/content/img/info.json',info)
+    srsly.write_json(f'{output_dir}/info.json',info)

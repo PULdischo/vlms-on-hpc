@@ -14,18 +14,23 @@ def model(
     """
     Downloads a model from Hugging Face Hub.
     """
-    model_path =snapshot_download(repo_id=repo_id, repo_type="model")
+    model_path = snapshot_download(repo_id=repo_id, repo_type="model")
+    info_path = Path("model_info.json")
+    model_info = srsly.read_json(info_path) if info_path.exists() else {}
+    model_info[repo_id] = {"model_path": model_path}
+    srsly.write_json(info_path, model_info)
     print(f"Model downloaded to: {model_path}")
 
 @app.command()
 def images(
     manifest_url: str,
+    output_dir: str = typer.Option("img", "--output-dir", "-o", help="Directory to save images"),
 ):
     """
     Downloads images from a IIIF manifest.
     """
-    print(manifest_url)
-    print('in progress...need to add this code')
+    from IIIF_download import iiif_tiles_download
+    iiif_tiles_download(manifest_url, output_dir)
 
 @app.command()
 def to_hub(

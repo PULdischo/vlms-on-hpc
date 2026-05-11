@@ -235,6 +235,9 @@ dependencies:
       - urllib3==2.5.0
       - uvicorn==0.35.0
       - uvloop==0.21.0
+      - gradio>=4.0.0
+      - pillow-heif>=0.16.0
+      - srsly>=2.4.8
       - vllm==0.10.0
       - watchfiles==1.1.0
       - websocket-client==1.8.0

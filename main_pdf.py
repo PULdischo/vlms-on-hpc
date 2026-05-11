@@ -1,18 +1,23 @@
 from PIL import Image
-import torch
-from transformers import AutoProcessor, AutoModelForImageTextToText, pipeline, Qwen2VLForConditionalGeneration
 from vllm import LLM, SamplingParams
-from pathlib import Path 
+from pathlib import Path
 import pymupdf
 from tqdm import tqdm
 from typing import Any, Dict, List, Union
 import io
 import base64
 import srsly
+from pillow_heif import register_heif_opener
+
+# Register the HEIF opener
+register_heif_opener()
 
 pdf_path = "pdfs"
 md_path = "markdown"
-model: str = '/scratch/network/aj7878/.cache/huggingface/hub/models--nanonets--Nanonets-OCR-s/snapshots/3baad182cc87c65a1861f0c30357d3467e978172'
+model_repo = "nanonets/Nanonets-OCR-s"
+# Read model path written by `fetch model`
+model_info = srsly.read_json("model_info.json")
+model: str = model_info[model_repo]['model_path']
 batch_size = 32
 max_tokens: int = 4096
 max_model_len: int = 8192
@@ -24,6 +29,7 @@ llm = LLM(
     max_model_len=max_model_len,
     gpu_memory_utilization=gpu_memory_utilization,
     limit_mm_per_prompt={"image": 1},
+    enable_prefix_caching=True,
 )
 
 sampling_params = SamplingParams(
@@ -41,7 +47,7 @@ def make_ocr_message(
         pil_img = image
     elif isinstance(image, dict) and "bytes" in image:
         pil_img = Image.open(io.BytesIO(image["bytes"]))
-    elif isinstance(image, str):
+    elif isinstance(image, (str, Path)):
         pil_img = Image.open(image)
     else:
         raise ValueError(f"Unsupported image type: {type(image)}")
@@ -64,25 +70,27 @@ def make_ocr_message(
 
 
 pdfs = Path(pdf_path).glob('*')
+Path(md_path).mkdir(parents=True, exist_ok=True)
+
 for pdf in pdfs:
 
     md_file = Path(md_path) / f"{pdf.stem}.md"
     if md_file.exists():
         continue
 
-    current_files = srsly.read_json("current_files.json")
-    if pdf.stem in current_files:
-        #print(f"Skipping {pdf.stem} as it is already being processed by another job.")
+    # Atomic claim using a .lock file (NFS-safe: O_CREAT|O_EXCL is atomic)
+    lock_file = pdf.with_suffix('.lock')
+    try:
+        lock_file.touch(exist_ok=False)
+    except FileExistsError:
+        # Another job is already processing this PDF
         continue
-    else:
-        current_files.append(pdf.stem)
-        srsly.write_json("current_files.json", current_files)
     
     pdf_images = []
     try:
         doc = pymupdf.open(pdf)
         for i, page in tqdm(enumerate(doc)):  # iterate through the pages
-            pix = page.get_pixmap(dpi=100)  
+            pix = page.get_pixmap(dpi=150)
             img = pix.pil_image()
             pdf_images.append({
                 "image": img,
@@ -106,12 +114,9 @@ for pdf in pdfs:
                 markdown_text = output.outputs[0].text.strip()
                 pdf_text += markdown_text + "\n\n"     
         md_file.write_text(pdf_text, encoding='utf-8')
-        current_files = srsly.read_json("current_files.json")
-        if pdf.stem in current_files:
-            current_files.remove(pdf.stem)
-            srsly.write_json("current_files.json", current_files)
-
+        lock_file.unlink(missing_ok=True)
 
     except Exception as e:
         print(f"Error opening {pdf}: {e}")
+        lock_file.unlink(missing_ok=True)
         continue
